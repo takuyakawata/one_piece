@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    ports:
+      - "${MYSQL_PORT}:3306" # MySQL
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./local-db/mysql:/var/lib/mysql
+      - ./local-db/init/init.sql:/docker-entrypoint-initdb.d/init.sql  # 初期データSQLのマウント
+    networks:
+      - norishio-network
+
+#awsの基盤
+  casbin:
+    build:
+      context: permission
+      dockerfile: Dockerfile
+    container_name: casbin
+    ports:
+      - "${CASBIN_PORT}:50051"
+    depends_on:
+      mysql:
+        condition: service_started
+    networks:
+      - norishio-network
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+networks:
+  norishio-network:
+    driver: bridge
